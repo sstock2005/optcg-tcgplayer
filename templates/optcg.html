@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta property="og:title" content="optcg deck calc - sstock.dev" />
+    <meta property="og:url" content="https://sstock.dev" />
+    <link rel="icon" type="image/png" href="/assets/favicon.png">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <title>optcg deck calc - sstock.dev</title>
+    <style>
+      *, body { margin: 0; }
+      a, body { color: #fff; }
+      main img, nav { margin: 20px 0; }
+      header, main img { box-shadow: 0 4px 6px rgba(0,0,0,.3); }
+      footer, header, main { text-align: center; background-color: #1e1e2e; }
+      footer, header p, main h3 { color: #d1c4ff; }
+      .links, footer { margin-top: 20px; }
+      * { padding: 0; box-sizing: border-box; }
+      body { font-family: Poppins, sans-serif; background-color: #121212; line-height: 1.6; }
+      a { text-decoration: none; font-weight: 600; transition: color .3s, background-color .3s; }
+      a:hover { color: #121212; background-color: #fff; padding: 3px 5px; border-radius: 3px; }
+      header { padding: 20px 0; }
+      header h1 { font-size: 2.5rem; margin-bottom: 5px; }
+      header p { font-size: 1.2rem; }
+      nav { display: flex; justify-content: center; gap: 15px; }
+      nav a { border: 2px solid #fff; padding: 8px 15px; border-radius: 5px; }
+      main { max-width: 800px; margin: 20px auto; border-radius: 5px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,.2); }
+      main h3 { font-size: 1.8rem; margin-bottom: 20px; }
+      main img { border-radius: 10px; max-width: 300px; height: auto; }
+      .links a { margin: 0 10px; font-size: 1rem; }
+      footer { padding: 10px 0; font-size: .9rem; }
+      textarea {
+        width: 100%;
+        padding: 12px;
+        font-family: inherit;
+        font-size: 1rem;
+        border: 1px solid #333;
+        border-radius: 5px;
+        background-color: #2c2c3a;
+        color: #fff;
+        margin-bottom: 20px;
+      }
+      input[type="submit"] {
+        background: transparent;
+        color: #fff;
+        border: 2px solid #fff;
+        padding: 10px 20px;
+        cursor: pointer;
+        border-radius: 5px;
+        font-weight: 600;
+        text-transform: uppercase;
+        transition: background-color 0.3s, color 0.3s;
+      }
+      input[type="submit"]:hover {
+        background: #fff;
+        color: #121212;
+      }
+      .loader {
+        border: 8px solid #f3f3f3;
+        border-top: 8px solid #fff;
+        border-radius: 50%;
+        width: 60px;
+        height: 60px;
+        animation: spin 1s linear infinite;
+        margin: 20px auto;
+        display: none;
+      }
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      .result, .errors {
+        padding: 15px;
+        background-color: #1e1e2e;
+        border-radius: 5px;
+        margin-top: 20px;
+      }
+      .errors ul {
+        list-style: none;
+        padding: 0;
+      }
+      .errors li {
+        color: #ff6b6b;
+      }
+      @media (max-width:600px) {
+        header h1 { font-size: 2rem; }
+        nav a { padding: 6px 10px; font-size: .9rem; }
+        main { padding: 15px; }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>sstock.dev</h1>
+      <p>One Piece TCG Deck Market Price Calculator</p>
+    </header>
+    <nav>
+      <a href="#">Home</a>
+      <a href="https://sstock.dev">Blog</a>
+      <a href="#">Projects</a>
+      <a href="#">Resume</a>
+    </nav>
+    <main>
+      <h3>Enter Deck:</h3>
+      <form id="deckForm">
+        <textarea name="deck" rows="10" placeholder="1 ST11-001 Uta&#10;4 ST16-002 Gordon&#10;4 OP02-034 Tony Tony.Chopper&#10;4 ST16-005 Monkey.D.Luffy&#10;...">{{ deck_text|default('') }}</textarea><br>
+        <input type="submit" value="Calculate">
+      </form>
+      <div id="loader" class="loader"></div>
+      <div id="resultContainer"></div>
+    </main>
+    <footer>
+      <p>&copy; 2025 Sam Stockstrom. All rights reserved.</p>
+    </footer>
+    <script>
+      const form = document.getElementById('deckForm');
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        // Clear previous results
+        document.getElementById('resultContainer').innerHTML = '';
+        // Show loader animation
+        document.getElementById('loader').style.display = 'block';
+        // Prepare form data
+        const formData = new FormData(form);
+        try {
+          const response = await fetch('/calculate', {
+            method: 'POST',
+            body: formData
+          });
+          const data = await response.json();
+          // Hide loader
+          document.getElementById('loader').style.display = 'none';
+          let html = '';
+          if (data.result) {
+            html += '<div class="result"><h3>Market Price: ' + data.result + '</h3></div>';
+          }
+          if (data.errors && data.errors.length > 0) {
+            html += '<div class="errors"><h3>Errors:</h3><ul>';
+            data.errors.forEach(error => {
+              html += '<li>' + error + '</li>';
+            });
+            html += '</ul></div>';
+          }
+          document.getElementById('resultContainer').innerHTML = html;
+        } catch (err) {
+          document.getElementById('loader').style.display = 'none';
+          document.getElementById('resultContainer').innerHTML = '<div class="errors"><h3>An error occurred.</h3></div>';
+        }
+      });
+    </script>
+  </body>
+</html>
